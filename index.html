@@ -85,11 +85,12 @@ textarea{width:100%;min-height:160px;font:14px/1.45 ui-monospace,monospace;paddi
       <div><label>Hours (estimate, e.g. 8-10)</label><input id="hours" type="text" autocomplete="off" placeholder="e.g. 8-10"></div>
       <div><label>Truck fee, $</label><input id="truckFee" type="number" inputmode="decimal" value="0"></div>
       <div><label>Materials / extras, $</label><input id="extra" type="number" inputmode="decimal" value="0"></div>
+      <div class="full"><label>My email (Submit sends the estimate here)</label><input id="cEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com"></div>
     </div></div>
   <div class="card"><table class="sum" id="calc"></table></div>
   <div class="card"><h2 style="margin-top:0">Item list</h2><div id="list"></div></div>
   <div class="card"><label>Text to send to customer</label><textarea id="txt" readonly></textarea>
-    <div class="row" style="margin-top:8px"><button class="btn tape" id="copy">Copy</button><button class="btn ghost" id="reset">Done: new customer</button></div></div>
+    <div class="row" style="margin-top:8px"><button class="btn tape" id="submit">Submit</button><button class="btn tape" id="copy">Copy</button><button class="btn ghost" id="reset">Done: new customer</button></div></div>
 </div>
 </div>
 
@@ -123,7 +124,7 @@ try{var cg=JSON.parse(localStorage.getItem("moveEstCfg")||"null");if(cg&&typeof 
 var hadC=false;Object.keys(S.custom||{}).forEach(function(r){if(ROOMS[r]&&S.custom[r].length){hadC=true;S.custom[r].forEach(function(it){ROOMS[r].push(it)})}});S.custom={};if(hadC)saveCfg();
 if(!ROOMS[S.room])S.room=Object.keys(ROOMS)[0];
 var $=function(i){return document.getElementById(i)};
-var FIELDS=["cName","cPhone","cFrom","cTo","cDrive","movers","truck","hours","mrate","truckFee","extra"];
+var FIELDS=["cName","cPhone","cFrom","cTo","cDrive","movers","truck","hours","mrate","truckFee","extra","cEmail"];
 try{var f=JSON.parse(localStorage.getItem("moveEstF")||"{}");FIELDS.forEach(function(k){if(f[k]!==undefined)$(k).value=f[k]})}catch(e){}
 function save(){try{localStorage.setItem("moveEst",JSON.stringify(S));var f={};FIELDS.forEach(function(k){f[k]=$(k).value});localStorage.setItem("moveEstF",JSON.stringify(f))}catch(e){}}
 function itemsOf(r){return ROOMS[r]||[]}
@@ -184,6 +185,10 @@ $("cuAdd").onclick=function(){var n=$("cuName").value.trim(),v=parseFloat($("cuC
 $("toggle").onclick=function(){rstBtn();S.view=S.view==="list"?"sum":"list";$("v-list").classList.toggle("hide",S.view==="sum");$("v-sum").classList.toggle("hide",S.view==="list");$("toggle").textContent=S.view==="sum"?"Back to rooms":"Summary";window.scrollTo(0,0);render()};
 FIELDS.forEach(function(k){$(k).addEventListener("input",render)});
 $("copy").onclick=function(){var t=$("txt");t.select();try{navigator.clipboard.writeText(t.value).then(function(){$("copy").textContent="Copied"},function(){document.execCommand("copy");$("copy").textContent="Copied"})}catch(e){try{document.execCommand("copy");$("copy").textContent="Copied"}catch(x){}}};
+$("submit").onclick=function(){var b=$("submit"),em=$("cEmail").value.trim();
+  if(!em){b.textContent="Enter your email first";$("cEmail").focus();setTimeout(function(){b.textContent="Submit"},2500);return}
+  var nm=$("cName").value.trim();
+  window.location.href="mailto:"+encodeURIComponent(em).replace(/%40/g,"@")+"?subject="+encodeURIComponent("Moving Estimate"+(nm?" - "+nm:""))+"&body="+encodeURIComponent($("txt").value)};
 function rstBtn(){delete $("reset").dataset.s;$("reset").textContent="Done: new customer"}
 $("reset").onclick=function(){var b=$("reset");
   if(!b.dataset.s){b.dataset.s=1;var t=$("txt");t.select();try{navigator.clipboard.writeText(t.value)}catch(e){try{document.execCommand("copy")}catch(x){}}b.textContent="Estimate copied. Tap again to clear";return}
