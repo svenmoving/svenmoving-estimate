@@ -65,10 +65,10 @@ textarea{width:100%;min-height:160px;font:14px/1.45 ui-monospace,monospace;paddi
     <div><label>Phone</label><input id="cPhone" type="tel" placeholder="(000) 000-0000"></div>
     <div class="full"><label>From</label><input id="cFrom" placeholder="Pickup address"></div>
     <div class="full"><label>To</label><input id="cTo" placeholder="Delivery address"></div>
-    <div class="full" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <div class="full"><label>Driving time (pickup to delivery)</label><input id="cDrive" placeholder="e.g. 30 min"></div>
+    <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div><label>Movers</label><select id="movers"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></div>
       <div><label>Truck</label><select id="truck"><option>20 ft</option><option>26 ft</option></select></div>
-      <div><label>Hours</label><input id="hours" type="number" inputmode="decimal" placeholder="e.g. 5"></div>
     </div>
   </div></div>
   <div class="tabs" id="tabs"></div>
@@ -81,15 +81,15 @@ textarea{width:100%;min-height:160px;font:14px/1.45 ui-monospace,monospace;paddi
 <div id="v-sum" class="hide">
   <div class="card"><h2 style="margin-top:0">Pricing</h2>
     <div class="grid2">
-      <div><label>Rate per mover, $/hr</label><input id="mrate" type="number" inputmode="decimal" value="80"></div>
+      <div><label>Rate, $/hr</label><input id="mrate" type="number" inputmode="decimal" value="80"></div>
+      <div><label>Hours (estimate, e.g. 8-10)</label><input id="hours" type="text" autocomplete="off" placeholder="e.g. 8-10"></div>
       <div><label>Truck fee, $</label><input id="truckFee" type="number" inputmode="decimal" value="0"></div>
       <div><label>Materials / extras, $</label><input id="extra" type="number" inputmode="decimal" value="0"></div>
-      <div class="full"><label>My email (Submit sends the list here)</label><input id="myEmail" type="email" inputmode="email" autocapitalize="off" placeholder="you@example.com"></div>
     </div></div>
   <div class="card"><table class="sum" id="calc"></table></div>
   <div class="card"><h2 style="margin-top:0">Item list</h2><div id="list"></div></div>
   <div class="card"><label>Text to send to customer</label><textarea id="txt" readonly></textarea>
-    <div class="row" style="margin-top:8px"><button class="btn tape" id="submit">Submit</button><button class="btn ghost" id="copy">Copy</button><button class="btn ghost" id="reset">Done: new customer</button></div></div>
+    <div class="row" style="margin-top:8px"><button class="btn tape" id="copy">Copy</button><button class="btn ghost" id="reset">Done: new customer</button></div></div>
 </div>
 </div>
 
@@ -104,24 +104,26 @@ var ROOMS={
 "Kitchen / Dining":[["Dining table",40],["Chair",6],["Bar stool",6],["China cabinet / buffet",50],["Refrigerator",50],["Washer",30],["Dryer",30],["Freezer",40],["Microwave",5],["Kitchen island / cart",25]],
 "Office":[["Desk",35],["Office chair",12],["File cabinet",15],["Bookcase",25],["Printer / monitor",5]],
 "Garage":[["Workbench",40],["Metal shelving",25],["Tool chest on wheels",20],["Lawn mower",15],["Bicycle",12],["BBQ grill",20],["Ladder",8],["Toolbox",5]],
+"Basement":[["Sofa, 3-seat",60],["Loveseat",40],["Sectional sofa",90],["Armchair",25],["Coffee table",10],["TV stand",20],["TV",15],["Bookcase",25],["Shelving unit",20],["Metal shelving",25],["Mini fridge",20],["Floor lamp",5],["Rug (rolled)",10],["Picture / mirror",3]],
 "Outdoor / Patio":[["Patio table",30],["Patio chair",8],["Lounge chair",12],["Umbrella",5],["Patio set",60],["Trampoline",40]],
 "Boxes":[["Small box",1.5],["Medium box",3],["Large box",4.5],["Dish pack box",3],["Bag / bin",5]],
 "Specialty":[["Upright piano",70],["Grand piano",150],["Safe",30],["Treadmill / gym equipment",50],["Pool table",100],["Aquarium",25],["Hot tub",120]]
 };
 var BOX=[["Small box",1.5],["Medium box",3],["Large box",4.5]],WARD=[["Wardrobe box",10]];
 var BED=[["King bed",70],["Queen bed",60],["Twin bed",35],["Mattress King/Queen",30],["Dresser",30],["Tall dresser",35],["Nightstand",8],["Vanity",20],["Wardrobe",50],["Mirror",5],["Kids bed",30],["Bunk bed",60],["Crib / playpen",20],["Toy chest",8]];
-(function(){var o={};Object.keys(ROOMS).forEach(function(k){o[k]=(k==="Boxes"||k==="Specialty")?ROOMS[k]:BOX.concat(ROOMS[k]);if(k==="Living Room"){for(var i=1;i<=5;i++)o["Bedroom "+i]=BOX.concat(WARD,BED)}if(k==="Garage")o["Basement"]=BOX.concat(ROOMS["Living Room"]);});ROOMS=o})();
+(function(){var o={};Object.keys(ROOMS).forEach(function(k){o[k]=(k==="Boxes"||k==="Specialty")?ROOMS[k]:BOX.concat(ROOMS[k]);if(k==="Living Room"){for(var i=1;i<=5;i++)o["Bedroom "+i]=BOX.concat(WARD,BED)}});ROOMS=o})();
 var TRUCKS=[[400,"10' (up to 400 cu ft)"],[760,"15' (up to 760 cu ft)"],[1000,"20' (up to 1000 cu ft)"],[1700,"26' (up to 1700 cu ft)"]];
 var S={room:"Living Room",qty:{},custom:{},view:"list"};
 try{var raw=localStorage.getItem("moveEst");if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
 S.view="list";
 var DEFAULT=JSON.stringify(ROOMS);S.edit=false;var pend="";
 function saveCfg(){try{localStorage.setItem("moveEstCfg",JSON.stringify(ROOMS))}catch(e){}}
-try{var cg=JSON.parse(localStorage.getItem("moveEstCfg")||"null");if(cg&&typeof cg==="object"){if(cg["Garage / Basement"]&&!cg["Garage"]){var m={};Object.keys(cg).forEach(function(k){if(k==="Garage / Basement"){m["Garage"]=cg[k];m["Basement"]=JSON.parse(DEFAULT)["Basement"]}else m[k]=cg[k]});cg=m;try{localStorage.setItem("moveEstCfg",JSON.stringify(cg))}catch(e){}}ROOMS=cg}}catch(e){}
+try{var cg=JSON.parse(localStorage.getItem("moveEstCfg")||"null");if(cg&&typeof cg==="object")ROOMS=cg}catch(e){}
+(function(){var old="Garage / Basement";if(ROOMS[old]&&!ROOMS["Garage"]&&!ROOMS["Basement"]){var D=JSON.parse(DEFAULT),o={};Object.keys(ROOMS).forEach(function(k){if(k===old){o["Garage"]=ROOMS[old];o["Basement"]=D["Basement"]||[]}else o[k]=ROOMS[k]});ROOMS=o;Object.keys(S.qty).forEach(function(k){if(k.indexOf(old+"|")===0){S.qty["Garage"+k.slice(old.length)]=S.qty[k];delete S.qty[k]}});if(S.room===old)S.room="Garage";saveCfg()}})();
 var hadC=false;Object.keys(S.custom||{}).forEach(function(r){if(ROOMS[r]&&S.custom[r].length){hadC=true;S.custom[r].forEach(function(it){ROOMS[r].push(it)})}});S.custom={};if(hadC)saveCfg();
 if(!ROOMS[S.room])S.room=Object.keys(ROOMS)[0];
 var $=function(i){return document.getElementById(i)};
-var FIELDS=["cName","cPhone","cFrom","cTo","movers","truck","hours","mrate","truckFee","extra","myEmail"];
+var FIELDS=["cName","cPhone","cFrom","cTo","cDrive","movers","truck","hours","mrate","truckFee","extra"];
 try{var f=JSON.parse(localStorage.getItem("moveEstF")||"{}");FIELDS.forEach(function(k){if(f[k]!==undefined)$(k).value=f[k]})}catch(e){}
 function save(){try{localStorage.setItem("moveEst",JSON.stringify(S));var f={};FIELDS.forEach(function(k){f[k]=$(k).value});localStorage.setItem("moveEstF",JSON.stringify(f))}catch(e){}}
 function itemsOf(r){return ROOMS[r]||[]}
@@ -139,19 +141,24 @@ function totals(){var n=0,cf=0,rows=[];
   Object.keys(ROOMS).forEach(function(r){var lines=[];itemsOf(r).forEach(function(it){var q=S.qty[r+"|"+it[0]]||0;if(q){n+=q;cf+=q*it[1];lines.push([it[0],q,q*it[1]])}});if(lines.length)rows.push([r,lines])});
   return{n:n,cf:cf,rows:rows}}
 function num(id){return parseFloat($(id).value)||0}
-function calc(){var t=totals();var hrs=num("hours");
-  var crew=num("movers")*num("mrate"),labor=hrs*crew,total=labor+num("truckFee")+num("extra");
+function fh(x){return String(+x.toFixed(1))}
+function hrsRange(){var v=$("hours").value.replace(/,/g,".");var m=v.match(/(\d+(?:\.\d+)?)\s*(?:-|\u2013|\u2014|to)\s*(\d+(?:\.\d+)?)/i);
+  if(m){var a=parseFloat(m[1]),b=parseFloat(m[2]);return a<=b?[a,b]:[b,a]}var x=parseFloat(v)||0;return[x,x]}
+function calc(){var t=totals();var h=hrsRange();
+  var crew=num("mrate"),fixed=num("truckFee")+num("extra");
+  var laborLo=h[0]*crew,laborHi=h[1]*crew;
   var CAP={"20 ft":1000,"26 ft":1700},truck=$("truck").value+(t.cf>(CAP[$("truck").value]||0)?" (volume may need 2 trips)":"");
-  return{t:t,hrs:hrs,crew:crew,labor:labor,total:total,truck:truck}}
+  return{t:t,hrsTxt:h[0]===h[1]?fh(h[0]):fh(h[0])+"\u2013"+fh(h[1]),crew:crew,fixed:fixed,laborLo:laborLo,laborHi:laborHi,totalLo:laborLo+fixed,totalHi:laborHi+fixed,truck:truck}}
 function money(x){return "$"+Math.round(x).toLocaleString("en-US")}
+function moneyR(a,b){return Math.round(a)===Math.round(b)?money(a):money(a)+" \u2013 "+money(b)}
 function render(){renderTabs();renderItems();var c=calc();
-  $("barT").textContent=c.t.n+" items · "+c.truck;$("barV").textContent=Math.round(c.t.cf)+" cu ft · "+money(c.total);
-  if(S.view==="sum"){
-    $("calc").innerHTML='<tr><td>Volume</td><td>'+Math.round(c.t.cf)+' cu ft</td></tr><tr><td>Truck</td><td>'+c.truck+'</td></tr><tr><td>Crew</td><td>'+num("movers")+' movers · '+money(c.crew)+'/hr</td></tr><tr><td>Hours (your estimate)</td><td>'+c.hrs.toFixed(1)+'</td></tr><tr><td>Labor</td><td>'+money(c.labor)+'</td></tr><tr><td>Truck + extras</td><td>'+money(num("truckFee")+num("extra"))+'</td></tr><tr class="big"><td>Total</td><td>'+money(c.total)+'</td></tr>';
+  $("barT").textContent=c.t.n+" items · "+c.truck;$("barV").textContent=Math.round(c.t.cf)+" cu ft · "+moneyR(c.totalLo,c.totalHi);
+  if(S.view==="sum"){var drv=$("cDrive").value.trim();
+    $("calc").innerHTML='<tr><td>Volume</td><td>'+Math.round(c.t.cf)+' cu ft</td></tr>'+(drv?'<tr><td>Driving time</td><td>'+esc(drv)+'</td></tr>':'')+'<tr><td>Truck</td><td>'+c.truck+'</td></tr><tr><td>Crew</td><td>'+num("movers")+' movers · '+money(c.crew)+'/hr</td></tr><tr><td>Hours (estimate)</td><td>'+c.hrsTxt+'</td></tr><tr><td>Labor</td><td>'+moneyR(c.laborLo,c.laborHi)+'</td></tr><tr><td>Truck + extras</td><td>'+money(c.fixed)+'</td></tr><tr class="big"><td>Total</td><td>'+moneyR(c.totalLo,c.totalHi)+'</td></tr>';
     $("list").innerHTML=c.t.rows.length?c.t.rows.map(function(r){return '<h2>'+esc(r[0])+'</h2><table class="sum">'+r[1].map(function(l){return '<tr><td>'+esc(l[0])+' × '+l[1]+'</td><td>'+Math.round(l[2])+' cu ft</td></tr>'}).join("")+'</table>'}).join(""):'<p style="color:var(--mute)">Nothing selected yet. Go back to the rooms and tap +.</p>';
-    var s="MOVING ESTIMATE\n"+($("cName").value||"")+" "+($("cPhone").value||"")+"\nFrom: "+($("cFrom").value||"-")+"\nTo: "+($("cTo").value||"-")+"\n";
+    var s="MOVING ESTIMATE\n"+($("cName").value||"")+" "+($("cPhone").value||"")+"\nFrom: "+($("cFrom").value||"-")+"\nTo: "+($("cTo").value||"-")+"\n"+(drv?"Driving time: "+drv+"\n":"");
     c.t.rows.forEach(function(r){s+="\n"+r[0]+":\n";r[1].forEach(function(l){s+="- "+l[0]+" x"+l[1]+"\n"})});
-    s+="\nVolume: "+Math.round(c.t.cf)+" cu ft\nTruck: "+c.truck+"\nMovers: "+num("movers")+"\nTime: ~"+c.hrs.toFixed(1)+" hrs\nTotal: "+money(c.total);
+    s+="\nVolume: "+Math.round(c.t.cf)+" cu ft\nTruck: "+c.truck+"\nMovers: "+num("movers")+"\nTime: ~"+c.hrsTxt+" hrs\nTotal: "+moneyR(c.totalLo,c.totalHi);
     $("txt").value=s}
   save()}
 $("tabs").onclick=function(e){var b=e.target.closest(".tab");if(!b)return;pend="";if(b.dataset.add){var n=1;while(ROOMS["New room "+n])n++;ROOMS["New room "+n]=[];S.room="New room "+n;saveCfg()}else S.room=b.dataset.r;render()};
@@ -170,23 +177,17 @@ $("items").addEventListener("change",function(e){var t=e.target;if(!S.edit)retur
 $("editBtn").onclick=function(){S.edit=!S.edit;pend="";$("editBtn").textContent=S.edit?"Done":"Edit";$("ban").classList.toggle("hide",!S.edit);if(S.edit&&S.view==="sum")$("toggle").click();render()};
 $("clearAll").onclick=function(){var b=this;
   if(!b.dataset.s){b.dataset.s=1;b.textContent="Tap again to clear everything";setTimeout(function(){delete b.dataset.s;b.textContent="Clear all"},4000);return}
-  S.qty={};FIELDS.slice(0,4).forEach(function(k){$(k).value=""});$("hours").value="";delete b.dataset.s;b.textContent="Clear all";S.room=Object.keys(ROOMS)[0];render();window.scrollTo(0,0)};
+  S.qty={};FIELDS.slice(0,5).forEach(function(k){$(k).value=""});$("hours").value="";delete b.dataset.s;b.textContent="Clear all";S.room=Object.keys(ROOMS)[0];render();window.scrollTo(0,0)};
 $("resetCfg").onclick=function(){if(pend!=="cfg"){pend="cfg";this.textContent="Tap again to restore defaults";return}ROOMS=JSON.parse(DEFAULT);try{localStorage.removeItem("moveEstCfg")}catch(e){}S.room=Object.keys(ROOMS)[0];pend="";this.textContent="Restore default list";render()};
 $("items").onclick=function(e){var a=e.target.closest("button[data-act]");if(a){editAct(a);return}var b=e.target.closest("button[data-k]");if(!b)return;var k=S.room+"|"+b.dataset.k;S.qty[k]=Math.max(0,(S.qty[k]||0)+parseInt(b.dataset.d));render()};
 $("cuAdd").onclick=function(){var n=$("cuName").value.trim(),v=parseFloat($("cuCf").value)||0;if(!n)return;ROOMS[S.room].push([n,v]);saveCfg();$("cuName").value="";$("cuCf").value="";render()};
 $("toggle").onclick=function(){rstBtn();S.view=S.view==="list"?"sum":"list";$("v-list").classList.toggle("hide",S.view==="sum");$("v-sum").classList.toggle("hide",S.view==="list");$("toggle").textContent=S.view==="sum"?"Back to rooms":"Summary";window.scrollTo(0,0);render()};
 FIELDS.forEach(function(k){$(k).addEventListener("input",render)});
 $("copy").onclick=function(){var t=$("txt");t.select();try{navigator.clipboard.writeText(t.value).then(function(){$("copy").textContent="Copied"},function(){document.execCommand("copy");$("copy").textContent="Copied"})}catch(e){try{document.execCommand("copy");$("copy").textContent="Copied"}catch(x){}}};
-$("submit").onclick=function(){var b=this,to=$("myEmail").value.trim();
-  if(!to){b.textContent="Enter your email above";$("myEmail").focus();setTimeout(function(){b.textContent="Submit"},2500);return}
-  var t=$("txt").value;try{navigator.clipboard.writeText(t)}catch(e){}
-  var sub="Moving estimate: "+($("cName").value||"customer")+" "+($("cPhone").value||"");
-  var a=document.createElement("a");a.href="mailto:"+to+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(t);a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();
-  b.textContent="Email draft opened";setTimeout(function(){b.textContent="Submit"},3000)};
 function rstBtn(){delete $("reset").dataset.s;$("reset").textContent="Done: new customer"}
 $("reset").onclick=function(){var b=$("reset");
   if(!b.dataset.s){b.dataset.s=1;var t=$("txt");t.select();try{navigator.clipboard.writeText(t.value)}catch(e){try{document.execCommand("copy")}catch(x){}}b.textContent="Estimate copied. Tap again to clear";return}
-  S.qty={};S.custom={};FIELDS.slice(0,4).forEach(function(k){$(k).value=""});$("hours").value="";S.room=Object.keys(ROOMS)[0];rstBtn();
+  S.qty={};S.custom={};FIELDS.slice(0,5).forEach(function(k){$(k).value=""});$("hours").value="";S.room=Object.keys(ROOMS)[0];rstBtn();
   if(S.view==="sum")$("toggle").click();else render();window.scrollTo(0,0)};
 render();
 </script>
